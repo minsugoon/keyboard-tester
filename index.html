@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>키보드 타건 측정기 & 타자 연습</title>
+  <meta name="description" content="키보드 입력 속도, 지연 시간, 동시 입력 수를 측정하고 타자 연습까지 할 수 있는 무료 웹 도구입니다." />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    [data-theme="dark"] {
+      --bg: #0d0d12; --bg2: #14141c; --bg3: #1c1c26;
+      --border: rgba(200,210,255,0.09); --border2: rgba(200,210,255,0.18);
+      --text: #dce8ff;   /* 쿨 블루-화이트 · 눈부심 없는 주 텍스트 */
+      --text2: #9db0d8;  /* 미디엄 블루그레이 · 보조 텍스트 */
+      --text3: #6070a0;  /* 딤 블루 · 힌트/레이블 */
+      --accent: #7c6fff; --accent2: #5b4fff;
+      --green: #4ade80; --red: #f87171; --orange: #fb923c; --info: #60a5fa;
+      --radius: 10px; --radius-lg: 16px;
+      --theme-icon: "☀️";
+      --btn-hover-bg: #1c1c26;
+    }
+
+    [data-theme="light"] {
+      /* 눈 보호 + 색각 이상 배려 모드 */
+      /* 배경: 블루라이트를 줄인 따뜻한 아이보리 계열 */
+      --bg: #f5f0e8; --bg2: #fdfaf4; --bg3: #ede8dc;
+      --border: rgba(80,60,20,0.12); --border2: rgba(80,60,20,0.22);
+      /* 텍스트: 순수 검정 대신 부드러운 다크브라운 → 눈부심 감소 */
+      --text: #2c2010; --text2: #6b5a3e; --text3: #a08c6e;
+      /* 포인트: 파란/보라 계열 → 색맹·녹색약 구분 가능한 파랑+주황 조합 */
+      --accent: #1a6eb5; --accent2: #0f5490;
+      /* 정답(correct): 파란색 → 적록색맹도 구분 가능 */
+      --green: #1a6eb5;
+      /* 오타(wrong): 주황색 → 적록색맹이 빨강/초록 혼동 없이 인식 */
+      --red: #c95f00;
+      /* 보통(normal): 짙은 자주 → 파랑/주황과 명확히 구분 */
+      --orange: #7b3fa0;
+      --info: #1a6eb5;
+      --radius: 10px; --radius-lg: 16px;
+      --theme-icon: "🌙";
+      --btn-hover-bg: #ede8dc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      min-height: 100vh;
+      padding: 0 0 4rem;
+      transition: background 0.25s, color 0.25s;
+    }
+
+    header {
+      padding: 2rem 2rem 1.5rem;
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .logo-text h1 { font-size: 18px; font-weight: 700; color: var(--text); line-height: 1.2; }
+    .logo-text p { font-size: 12px; color: var(--text3); }
+
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg2);
+      border: 0.5px solid var(--border2);
+      border-radius: 40px;
+      padding: 5px 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .theme-toggle:hover { border-color: var(--accent); }
+
+    .toggle-option {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text3);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .toggle-option.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .toggle-icon { font-size: 14px; }
+
+    .main { max-width: 900px; margin: 0 auto; padding: 0 1rem; }
+
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+
+    @media (max-width: 640px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .grid-2 { grid-template-columns: 1fr !important; }
+      .toggle-option span { display: none; }
+    }
+
+    .metric { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem; transition: background 0.25s; }
+    .metric-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .metric-value { font-size: 24px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+    .metric-unit { font-size: 12px; color: var(--text3); font-weight: 400; margin-left: 2px; }
+
+    .card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1rem; transition: background 0.25s; }
+    .card-title { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem; }
+
+    .typing-box { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; overflow: hidden; width: 100%; transition: background 0.25s; }
+
+    .example-text { font-size: 17px; line-height: 2.1; font-family: 'Noto Sans KR', sans-serif; word-break: keep-all; overflow-wrap: break-word; white-space: normal; margin-bottom: 0; letter-spacing: 0.03em; width: 100%; }
+
+    .ch { position: relative; }
+    .ch.correct { color: var(--green); }
+    .ch.wrong { color: var(--red); background: rgba(220,38,38,0.1); border-radius: 2px; }
+    .ch.pending { color: var(--text3); }
+    .ch.cursor::after { content: ''; position: absolute; left: 0; bottom: 2px; width: 100%; height: 2px; background: var(--accent); animation: blink 1s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    .input-divider { height: 1px; background: var(--border); margin: 0.55rem 0; }
+
+    .typing-input { width: 100%; padding: 0; font-size: 17px; line-height: 2.1; font-family: 'Noto Sans KR', sans-serif; letter-spacing: 0.03em; border: none; background: transparent; color: var(--text); outline: none; caret-color: var(--accent); }
+    .typing-input:focus { border-color: transparent; }
+    .typing-input::placeholder { color: var(--text3); }
+
+    .progress-wrap { margin-bottom: 1rem; }
+    .progress-bar-bg { background: var(--bg3); border-radius: 4px; height: 6px; overflow: hidden; transition: background 0.25s; }
+    .progress-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width 0.2s; }
+    .progress-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; display: flex; justify-content: space-between; }
+
+    .stage-badge { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 20px; background: rgba(124,111,255,0.15); color: var(--accent); font-weight: 500; margin-bottom: 1rem; border: 0.5px solid rgba(124,111,255,0.3); }
+
+    .result-box { text-align: center; padding: 1.5rem 0; }
+    .result-emoji { font-size: 36px; margin-bottom: 0.5rem; }
+    .result-big { font-size: 36px; font-weight: 700; color: var(--accent); margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; }
+    .result-sub { font-size: 14px; color: var(--text2); margin-bottom: 1.5rem; }
+
+    .key-display { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; }
+    .key-badge { background: rgba(124,111,255,0.12); color: var(--accent); border: 0.5px solid rgba(124,111,255,0.3); border-radius: 6px; padding: 4px 10px; font-size: 13px; font-weight: 500; font-family: 'JetBrains Mono', monospace; }
+
+    .log-area { max-height: 150px; overflow-y: auto; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--text2); }
+    .log-area::-webkit-scrollbar { width: 4px; }
+    .log-area::-webkit-scrollbar-track { background: transparent; }
+    .log-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .log-row { padding: 4px 0; border-bottom: 0.5px solid var(--border); display: flex; gap: 10px; align-items: center; }
+    .log-time { color: var(--text3); min-width: 60px; font-size: 11px; }
+    .log-key { color: var(--info); min-width: 80px; }
+    .log-dur { color: var(--green); min-width: 60px; }
+    .log-grade { font-size: 11px; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1rem; }
+    .bar-wrap { margin-bottom: 10px; }
+    .bar-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .bar-bg { background: var(--bg3); border-radius: 4px; height: 8px; overflow: hidden; transition: background 0.25s; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
+    button { padding: 8px 18px; font-size: 13px; font-family: 'Noto Sans KR', sans-serif; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; cursor: pointer; color: var(--text2); transition: all 0.15s; font-weight: 500; }
+    button:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+    button:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+
+    .hidden { display: none; }
+    footer { text-align: center; padding: 2rem; font-size: 12px; color: var(--text3); }
+
+    /* ── 쇼츠 모드 ── */
+    .shorts-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px; font-size: 13px; font-weight: 500;
+      font-family: 'Noto Sans KR', sans-serif;
+      border-radius: 30px; border: 0.5px solid var(--border2);
+      background: transparent; cursor: pointer; color: var(--text2);
+      transition: all 0.2s;
+    }
+    .shorts-btn:hover { background: var(--bg3); border-color: var(--accent); color: var(--text); }
+
+    /* 쇼츠 모드 진입 시 기존 UI 숨김 */
+    body.shorts-mode { padding: 0; overflow: hidden; }
+    body.shorts-mode header { display: none; }
+    body.shorts-mode footer { display: none; }
+    body.shorts-mode .main { display: none; }
+
+    #shorts-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 1000;
+      background: var(--bg);
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    body.shorts-mode #shorts-overlay { display: block; }
+
+    /* 반응형: 고정 비율 없이 브라우저 너비에 맞게 */
+    .shorts-frame {
+      width: 100%;
+      min-height: 100vh;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      padding: 48px 20px 32px;
+      position: relative;
+      max-width: 480px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    /* viewport scale 0.5 보정: 모든 글자/요소 2배 확대 */
+    body.shorts-mode .shorts-frame { max-width: 100%; }
+    body.shorts-mode .shorts-title { font-size: 44px; margin-bottom: 24px; }
+    body.shorts-mode .scene-chip { font-size: 26px; padding: 12px 28px; }
+    body.shorts-mode .scene-dot { width: 14px; height: 14px; }
+    body.shorts-mode .shorts-stage { font-size: 22px; padding: 6px 20px; margin-bottom: 16px; }
+    body.shorts-mode .shorts-progress-bg { height: 8px; margin-bottom: 16px; }
+
+    body.shorts-mode .shorts-video-wrap { border-width: 3px; }
+    body.shorts-mode .shorts-video-label { font-size: 26px; gap: 10px; }
+    body.shorts-mode .shorts-video-label .vid-icon { font-size: 48px; }
+    body.shorts-mode .shorts-video-label span { font-size: 22px; }
+    body.shorts-mode .shorts-info { padding: 24px; }
+    body.shorts-mode .shorts-info-title { font-size: 22px; margin-bottom: 16px; }
+    body.shorts-mode .info-field label { font-size: 22px; margin-bottom: 8px; }
+    body.shorts-mode .info-field input { font-size: 26px; padding: 16px 18px; }
+    body.shorts-mode .shorts-exit { width: 60px; height: 60px; font-size: 28px; top: 20px; right: 20px; }
+    body.shorts-mode #info-display { font-size: 28px; padding: 20px 24px; }
+    body.shorts-mode #info-display .info-line { margin-bottom: 14px; }
+    body.shorts-mode #info-display .info-label { font-size: 22px; }
+    body.shorts-mode #info-display .info-value { font-size: 28px; }
+    body.shorts-mode #shorts-info-display button { font-size: 24px !important; }
+
+    .shorts-exit {
+      position: fixed; top: 14px; right: 16px; z-index: 1100;
+      background: none; border: none;
+      cursor: pointer; color: var(--text3); font-size: 13px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-weight: 500; padding: 4px 0;
+      transition: color 0.2s;
+    }
+    .shorts-exit:hover { color: var(--text); }
+    body.shorts-mode .shorts-exit { font-size: 24px; top: 24px; right: 28px; }
+
+    .shorts-title {
+      font-size: 20px; font-weight: 700; color: var(--text);
+      margin-bottom: 8px; line-height: 1.3; text-align: center;
+      word-break: keep-all; overflow-wrap: break-word;
+    }
+    .shorts-title span { color: var(--accent); }
+
+    .shorts-scene-row {
+      display: flex; gap: 6px; margin-bottom: 8px;
+      justify-content: center; flex-wrap: wrap;
+    }
+    .scene-chip {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 30px; font-size: 12px; font-weight: 500;
+      border: 1.5px solid var(--border2); background: var(--bg2);
+      color: var(--text2); cursor: pointer; transition: all 0.2s;
+    }
+    .scene-chip.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .scene-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: 0.6; }
+    .scene-chip.active .scene-dot { opacity: 1; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:0.7} }
+
+    .shorts-typing-wrap {
+      background: var(--bg2); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 8px 12px; margin-bottom: 6px;
+      overflow: hidden;
+    }
+    .shorts-stage {
+      font-size: 10px; color: var(--accent); font-weight: 500;
+      background: rgba(124,111,255,0.12); border: 0.5px solid rgba(124,111,255,0.3);
+      display: inline-block; padding: 2px 8px; border-radius: 20px; margin-bottom: 6px;
+    }
+    .shorts-progress-bg { background: var(--bg3); border-radius: 4px; height: 3px; overflow: hidden; margin-bottom: 6px; }
+    .shorts-progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width 0.2s; }
+    .shorts-example {
+      font-size: 15px; line-height: 2.0;
+      font-family: 'Noto Sans KR', sans-serif;
+      letter-spacing: 0.03em;
+      word-break: keep-all; overflow-wrap: break-word;
+      white-space: normal; width: 100%; margin-bottom: 0;
+    }
+    .shorts-input {
+      width: 100%; padding: 0; font-size: 15px; line-height: 2.0;
+      font-family: 'Noto Sans KR', sans-serif;
+      letter-spacing: 0.03em;
+      border: none; background: transparent;
+      color: var(--text); outline: none;
+      caret-color: var(--accent);
+      box-sizing: border-box;
+    }
+    .shorts-input:focus { border-color: transparent; }
+    .shorts-input::placeholder { color: var(--text3); }
+    .shorts-btn-row { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+    .shorts-btn-row button {
+      padding: 0; font-size: 8px; background: none; border: none;
+      color: var(--text3); font-weight: 400; cursor: pointer;
+      transition: color 0.2s; text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .shorts-btn-row button:hover { color: var(--text); background: none; border: none; }
+
+    /* ── 키 테스트 모드 ── */
+    #keytest-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 1000;
+      background: var(--bg);
+      overflow-y: auto; overflow-x: hidden;
+    }
+    body.keytest-mode #keytest-overlay { display: block; }
+    body.keytest-mode { padding: 0; overflow: hidden; }
+    body.keytest-mode header,
+    body.keytest-mode footer,
+    body.keytest-mode .main { display: none; }
+    body.keytest-mode .shorts-frame { max-width: 100%; }
+    body.keytest-mode .shorts-title  { font-size: 44px; margin-bottom: 24px; }
+    body.keytest-mode .scene-chip    { font-size: 26px; padding: 12px 28px; }
+    body.keytest-mode .scene-dot     { width: 14px; height: 14px; }
+    body.keytest-mode .shorts-exit   { width: 60px; height: 60px; font-size: 28px; top: 20px; right: 20px; }
+    body.keytest-mode .shorts-info   { padding: 24px; }
+    body.keytest-mode .shorts-info-title { font-size: 22px; margin-bottom: 16px; }
+    body.keytest-mode .info-field label  { font-size: 22px; margin-bottom: 8px; }
+    body.keytest-mode .info-field input  { font-size: 26px; padding: 16px 18px; }
+    body.keytest-mode .shorts-video-wrap { border-width: 3px; }
+    body.keytest-mode .shorts-video-label { font-size: 26px; gap: 10px; }
+    body.keytest-mode .shorts-video-label .vid-icon { font-size: 48px; }
+    body.keytest-mode .shorts-video-label span { font-size: 22px; }
+    body.keytest-mode #kt-info-disp  { font-size: 28px; padding: 20px 24px; }
+    body.keytest-mode #kt-info-disp .info-line  { margin-bottom: 14px; }
+    body.keytest-mode #kt-info-disp .info-label { font-size: 22px; }
+    body.keytest-mode #kt-info-disp .info-value { font-size: 28px; }
+
+    /* 키 캡 */
+    .kt-wrap {
+      background: var(--bg2); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 12px 16px;
+      margin-bottom: 6px; display: flex; flex-direction: row;
+      align-items: center; justify-content: center; gap: 14px;
+    }
+    .kt-info {
+      display: flex; flex-direction: column; gap: 6px; min-width: 0;
+    }
+    .kt-cap {
+      width: 64px; height: 64px; flex-shrink: 0;
+      background: var(--bg3);
+      border: 1.5px solid var(--border2);
+      border-bottom: 4px solid var(--border2);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.07s, border-bottom-width 0.07s, border-color 0.07s, box-shadow 0.07s;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      user-select: none;
+    }
+    .kt-cap.idle { border-style: dashed; opacity: 0.5; }
+    .kt-cap.pressed {
+      transform: translateY(2px);
+      border-bottom-width: 1px;
+      border-color: var(--accent);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.2), 0 0 0 2px rgba(124,111,255,0.25);
+    }
+    .kt-char {
+      font-size: 32px; font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text); line-height: 1;
+      max-width: 60px; text-align: center; overflow: hidden;
+    }
+    .kt-char.md { font-size: 19px; }
+    .kt-char.sm { font-size: 12px; }
+    .kt-tags { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-start; }
+    .kt-tag {
+      font-size: 11px; padding: 3px 10px; border-radius: 20px;
+      background: rgba(124,111,255,0.12); color: var(--accent);
+      border: 0.5px solid rgba(124,111,255,0.3); font-weight: 500;
+    }
+    .kt-hint {
+      font-size: 12px; color: var(--text3); text-align: left;
+      font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em;
+    }
+    /* 쇼츠 촬영 모드 배율 */
+    body.keytest-mode .kt-wrap   { padding: 20px 24px; gap: 24px; }
+    body.keytest-mode .kt-cap    { width: 128px; height: 128px; border-radius: 16px; border-bottom-width: 6px; }
+    body.keytest-mode .kt-cap.pressed { transform: translateY(3px); border-bottom-width: 1px; }
+    body.keytest-mode .kt-char   { font-size: 64px; max-width: 120px; }
+    body.keytest-mode .kt-char.md{ font-size: 38px; }
+    body.keytest-mode .kt-char.sm{ font-size: 24px; }
+    body.keytest-mode .kt-tags   { gap: 10px; }
+    body.keytest-mode .kt-tag    { font-size: 20px; padding: 5px 16px; }
+    body.keytest-mode .kt-hint   { font-size: 22px; }
+
+    /* 씬 편집 버튼 */
+    .scene-edit-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text3); font-size: 13px; padding: 4px 6px;
+      transition: color 0.2s; font-family: 'Noto Sans KR', sans-serif;
+      line-height: 1; border-radius: 6px;
+    }
+    .scene-edit-btn:hover { color: var(--accent); }
+    body.shorts-mode  .scene-edit-btn { font-size: 26px; }
+    body.keytest-mode .scene-edit-btn { font-size: 26px; }
+
+    /* 씬 편집 모달 */
+    .scene-edit-overlay {
+      position: fixed; inset: 0; z-index: 3000;
+      background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .scene-edit-overlay.hidden { display: none; }
+    .scene-edit-box {
+      background: var(--bg2); border: 0.5px solid var(--border2);
+      border-radius: var(--radius-lg); padding: 20px;
+      width: 300px; max-width: 90vw;
+    }
+    .scene-edit-title {
+      font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .scene-edit-title span { font-size: 11px; font-weight: 400; color: var(--text3); }
+    .scene-edit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .scene-edit-item { display: flex; align-items: center; gap: 8px; }
+    .scene-edit-item input {
+      flex: 1; padding: 7px 10px; font-size: 13px;
+      border: 1px solid var(--border2); border-radius: var(--radius);
+      background: var(--bg3); color: var(--text); outline: none;
+      font-family: 'Noto Sans KR', sans-serif; transition: border-color 0.2s;
+    }
+    .scene-edit-item input:focus { border-color: var(--accent); }
+    .scene-del-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text3); font-size: 15px; padding: 4px 6px;
+      border-radius: 6px; transition: color 0.2s, background 0.2s; line-height: 1;
+    }
+    .scene-del-btn:hover:not(:disabled) { color: var(--red); background: rgba(248,113,113,0.1); }
+    .scene-del-btn:disabled { opacity: 0.25; cursor: default; }
+    .scene-add-btn {
+      width: 100%; padding: 8px; font-size: 12px; font-weight: 500;
+      border: 1px dashed var(--border2); border-radius: var(--radius);
+      background: none; color: var(--text2); cursor: pointer;
+      font-family: 'Noto Sans KR', sans-serif; transition: all 0.2s; margin-bottom: 14px;
+    }
+    .scene-add-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .scene-add-btn:disabled { opacity: 0.3; cursor: default; }
+    .scene-edit-footer { display: flex; gap: 8px; justify-content: flex-end; }
+    .scene-edit-footer button {
+      padding: 7px 16px; font-size: 13px; font-weight: 500;
+      border-radius: var(--radius); border: 1px solid var(--border2);
+      background: none; color: var(--text2); cursor: pointer;
+      font-family: 'Noto Sans KR', sans-serif; transition: all 0.2s;
+    }
+    .scene-edit-footer .btn-save {
+      background: var(--accent); border-color: var(--accent); color: #fff;
+    }
+    .scene-edit-footer .btn-save:hover { background: var(--accent2); }
+
+    /* 영상 영역: 비율 버튼으로 동적 변경 */
+    .shorts-video-wrap {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: var(--bg3);
+      border-radius: var(--radius);
+      border: 2px dashed var(--border2);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      margin-bottom: 6px;
+      position: relative;
+    }
+    .shorts-video-label {
+      font-size: 13px; color: var(--text3); font-weight: 500;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .shorts-video-label .vid-icon { font-size: 24px; }
+    .shorts-video-label span { font-size: 11px; opacity: 0.6; }
+
+    .shorts-info {
+      background: var(--bg2); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 8px 12px;
+      overflow: hidden;
+    }
+    .shorts-info-title { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .info-field { margin-bottom: 8px; }
+    .info-field label { font-size: 11px; color: var(--text3); display: block; margin-bottom: 4px; }
+    .info-field input {
+      width: 100%; padding: 8px 10px; font-size: 13px;
+      font-family: 'Noto Sans KR', sans-serif;
+      border-radius: var(--radius); border: 1px solid var(--border);
+      background: var(--bg3); color: var(--text); outline: none;
+      box-sizing: border-box;
+    }
+    .info-field input:focus { border-color: var(--accent); }
+    .info-field input::placeholder { color: var(--text3); }
+    .info-confirm-btn {
+      width: 100%; padding: 10px; font-size: 14px; font-weight: 600;
+      font-family: 'Noto Sans KR', sans-serif;
+      border-radius: var(--radius); border: none;
+      background: var(--accent); color: #fff; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .info-confirm-btn:hover { background: var(--accent2); }
+    #info-display { padding: 4px 0; }
+    .info-line {
+      display: flex; align-items: baseline; gap: 8px;
+      padding: 6px 0;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .info-line:last-child { border-bottom: none; }
+    .info-label { font-size: 10px; color: var(--text3); white-space: nowrap; font-weight: 500; min-width: 48px; }
+    .info-value { font-size: 12px; color: var(--text); font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⌨</div>
+    <div class="logo-text">
+      <h1>키보드 타건 측정기</h1>
+      <p>타수 측정 · 반응도 · 타자 연습</p>
+    </div>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:8px;">
+    <div class="theme-toggle" onclick="toggleTheme()">
+      <div class="toggle-option active" id="opt-dark">
+        <span class="toggle-icon">🌙</span>
+        <span>다크</span>
+      </div>
+      <div class="toggle-option" id="opt-light">
+        <span class="toggle-icon">☀️</span>
+        <span>라이트</span>
+      </div>
+    </div>
+    <button class="shorts-btn" id="shorts-toggle-btn" onclick="enterShorts()">
+      <span>▶</span> 쇼츠 모드
+    </button>
+    <button class="shorts-btn" onclick="enterKeyTest()">
+      <span>🎹</span> 키 테스트
+    </button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="grid-4">
+    <div class="metric"><div class="metric-label">키 누름 시간 (평균)</div><div class="metric-value" id="m-speed">—<span class="metric-unit">ms</span></div></div>
+    <div class="metric"><div class="metric-label">최대 동시 입력</div><div class="metric-value" id="m-nkro">—<span class="metric-unit">키</span></div></div>
+    <div class="metric"><div class="metric-label">키 입력 간격 (평균)</div><div class="metric-value" id="m-delay">—<span class="metric-unit">ms</span></div></div>
+    <div class="metric"><div class="metric-label">총 입력 횟수</div><div class="metric-value" id="m-count">0<span class="metric-unit">회</span></div></div>
+  </div>
+
+  <div class="card">
+    <div class="stage-badge" id="stage-badge">1 / 3 단계</div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span id="prog-label">진행도</span><span id="prog-pct">0%</span></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+    <div class="typing-box">
+      <div class="example-text" id="example-display"></div>
+      <div class="input-divider"></div>
+      <input class="typing-input" id="typing-input" placeholder="여기에 입력하세요..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+    </div>
+    <div class="btn-row">
+      <button onclick="restartTyping()">다시 시작</button>
+      <button onclick="skipStage()">건너뛰기</button>
+      <button id="sound-btn" onclick="toggleSound()">🔊 효과음 ON</button>
+    </div>
+
+    <div id="typing-result" class="hidden result-box">
+      <div class="result-emoji">🎉</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+        <div class="result-big" id="res-wpm">초당 — 타</div>
+        <div style="font-size:36px;font-weight:700;color:var(--text2);">/</div>
+        <div class="result-big" id="res-wpm-min">분당 — 타</div>
+      </div>
+      <div class="result-sub" style="margin-top:8px;">타자 연습 완료!</div>
+      <div class="grid-4" style="margin:1rem 0; text-align:left;">
+        <div class="metric"><div class="metric-label">정확도</div><div class="metric-value" id="res-acc">—<span class="metric-unit">%</span></div></div>
+        <div class="metric"><div class="metric-label">총 시간</div><div class="metric-value" id="res-time">—<span class="metric-unit">초</span></div></div>
+        <div class="metric"><div class="metric-label">오타 수</div><div class="metric-value" id="res-err">—<span class="metric-unit">개</span></div></div>
+        <div class="metric"><div class="metric-label">완료 단계</div><div class="metric-value">3<span class="metric-unit">단계</span></div></div>
+      </div>
+      <div class="btn-row" style="justify-content:center;">
+        <button onclick="restartTyping()">처음부터 다시</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">현재 누른 키</div>
+      <div class="key-display" id="active-keys"><span style="font-size:13px;color:var(--text3)">없음</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">반응도 분포</div>
+      <div class="bar-wrap"><div class="bar-label"><span>0~80ms (빠름)</span><span id="d0">0%</span></div><div class="bar-bg"><div class="bar-fill" id="b0" style="width:0%;background:var(--green);"></div></div></div>
+      <div class="bar-wrap"><div class="bar-label"><span>80~150ms (보통)</span><span id="d1">0%</span></div><div class="bar-bg"><div class="bar-fill" id="b1" style="width:0%;background:var(--orange);"></div></div></div>
+      <div class="bar-wrap"><div class="bar-label"><span>150ms+ (느림)</span><span id="d2">0%</span></div><div class="bar-bg"><div class="bar-fill" id="b2" style="width:0%;background:var(--red);"></div></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">타건 로그</div>
+    <div class="log-area" id="log-area"><div style="font-size:13px;color:var(--text3);padding:8px 0;">입력 기록이 여기에 표시됩니다</div></div>
+  </div>
+</div>
+
+<footer>키보드 타건 측정기 · 입력 데이터는 서버로 전송되지 않습니다</footer>
+<div id="shorts-overlay">
+  <div class="shorts-frame" id="shorts-frame">
+    <button class="shorts-exit" onclick="exitShorts()">✕</button>
+
+    <div class="shorts-title">
+      타건음 비교: <span id="shorts-scene-label">책상</span>
+    </div>
+
+    <div class="shorts-scene-row" id="shorts-scene-row"></div>
+
+    <div class="shorts-typing-wrap">
+      <div class="shorts-stage" id="s-stage-badge">1 / 3 단계</div>
+      <div class="shorts-progress-bg">
+        <div class="shorts-progress-fill" id="s-prog-fill" style="width:0%"></div>
+      </div>
+      <div class="shorts-example" id="s-example-display"></div>
+      <div class="input-divider"></div>
+      <input class="shorts-input" id="shorts-input"
+        placeholder="여기에 입력하세요..."
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+      <div class="shorts-btn-row">
+        <button onclick="shortsRestart()">다시 시작</button>
+        <button onclick="shortsSkip()">건너뛰기</button>
+        <button onclick="toggleSound()">🔊 효과음</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;">
+      <span style="font-size:10px;color:var(--text3);font-weight:500;">영상 비율</span>
+      <div style="display:flex;gap:6px;">
+        <button id="ratio-169" onclick="setRatio('16/9',this)" style="padding:3px 10px;font-size:9px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;">16:9</button>
+        <button id="ratio-43" onclick="setRatio('4/3',this)" style="padding:3px 10px;font-size:9px;border-radius:20px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;">4:3</button>
+      </div>
+    </div>
+    <div class="shorts-video-wrap" id="shorts-video-wrap">
+      <div class="shorts-video-label">
+        <span class="vid-icon">🎬</span>
+        영상 촬영 영역
+        <span id="ratio-label">16:9 (1080p) 기준</span>
+      </div>
+    </div>
+
+    <div class="shorts-info" id="shorts-info-form">
+      <div class="shorts-info-title">키보드 정보</div>
+      <div class="info-field">
+        <label>키보드 모델명</label>
+        <input type="text" id="info-keyboard" placeholder="예: 체리 MX BOARD 3.0S 알루미늄 하우징" />
+      </div>
+      <div class="info-field">
+        <label>스위치 모델명</label>
+        <input type="text" id="info-switch" placeholder="예: 체리 MX2A 변형백축 택타일 스위치" />
+      </div>
+      <div class="info-field">
+        <label>촬영 환경</label>
+        <input type="text" id="info-env" placeholder="예: 인스타360 에이스 프로2 / 내장 마이크" />
+      </div>
+      <button class="info-confirm-btn btn-primary" onclick="confirmInfo()" style="margin-top:10px;width:100%;">확인</button>
+    </div>
+
+    <div class="shorts-info hidden" id="shorts-info-display">
+      <div id="info-display">
+        <div class="info-line">
+          <span class="info-label">⌨ 키보드 </span>
+          <span class="info-value" id="disp-keyboard">—</span>
+        </div>
+        <div class="info-line">
+          <span class="info-label">🔧 스위치 </span>
+          <span class="info-value" id="disp-switch">—</span>
+        </div>
+        <div class="info-line">
+          <span class="info-label">🎬 촬영 </span>
+          <span class="info-value" id="disp-env">—</span>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:right;margin-top:3px;">
+      <button onclick="editInfo()" style="background:none;border:none;font-size:8px;color:var(--text3);cursor:pointer;padding:2px 0;text-decoration:underline;text-underline-offset:2px;font-family:'Noto Sans KR',sans-serif;transition:color 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">수정</button>
+    </div>
+
+  </div>
+</div>
+
+<div id="keytest-overlay">
+  <div class="shorts-frame">
+    <button class="shorts-exit" onclick="exitKeyTest()">✕</button>
+
+    <div class="shorts-title">키 <span>테스트</span></div>
+
+    <div class="shorts-scene-row" id="kt-scene-row"></div>
+
+    <div class="kt-wrap">
+      <div class="kt-cap idle" id="kt-cap">
+        <div class="kt-char" id="kt-char">?</div>
+      </div>
+      <div class="kt-info">
+        <div class="kt-tags">
+          <span class="kt-tag" id="kt-row-tag" style="display:none"></span>
+          <span class="kt-tag" id="kt-hand-tag" style="display:none"></span>
+        </div>
+        <div class="kt-hint" id="kt-hint">키를 눌러보세요</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;">
+      <span style="font-size:10px;color:var(--text3);font-weight:500;">영상 비율</span>
+      <div style="display:flex;gap:6px;">
+        <button id="kt-ratio-169" onclick="ktSetRatio('16/9',this)" style="padding:3px 10px;font-size:9px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;">16:9</button>
+        <button id="kt-ratio-43"  onclick="ktSetRatio('4/3',this)"  style="padding:3px 10px;font-size:9px;border-radius:20px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;">4:3</button>
+      </div>
+    </div>
+    <div class="shorts-video-wrap" id="kt-video-wrap">
+      <div class="shorts-video-label">
+        <span class="vid-icon">🎬</span>
+        영상 촬영 영역
+        <span id="kt-ratio-label">16:9 (1080p) 기준</span>
+      </div>
+    </div>
+
+    <div class="shorts-info" id="kt-info-form">
+      <div class="shorts-info-title">키보드 정보</div>
+      <div class="info-field">
+        <label>키보드 모델명</label>
+        <input type="text" id="kt-info-keyboard" placeholder="예: 체리 MX BOARD 3.0S 알루미늄 하우징" />
+      </div>
+      <div class="info-field">
+        <label>스위치 모델명</label>
+        <input type="text" id="kt-info-switch" placeholder="예: 체리 MX2A 변형백축 택타일 스위치" />
+      </div>
+      <div class="info-field">
+        <label>촬영 환경</label>
+        <input type="text" id="kt-info-env" placeholder="예: 인스타360 에이스 프로2 / 내장 마이크" />
+      </div>
+      <button class="info-confirm-btn btn-primary" onclick="ktConfirmInfo()" style="margin-top:10px;width:100%;">확인</button>
+    </div>
+
+    <div class="shorts-info hidden" id="kt-info-display">
+      <div id="kt-info-disp">
+        <div class="info-line"><span class="info-label">⌨ 키보드 </span><span class="info-value" id="kt-disp-keyboard">—</span></div>
+        <div class="info-line"><span class="info-label">🔧 스위치 </span><span class="info-value" id="kt-disp-switch">—</span></div>
+        <div class="info-line"><span class="info-label">🎬 촬영 </span><span class="info-value" id="kt-disp-env">—</span></div>
+      </div>
+    </div>
+    <div style="text-align:right;margin-top:3px;">
+      <button onclick="ktEditInfo()" style="background:none;border:none;font-size:8px;color:var(--text3);cursor:pointer;padding:2px 0;text-decoration:underline;text-underline-offset:2px;font-family:'Noto Sans KR',sans-serif;transition:color 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">수정</button>
+    </div>
+  </div>
+</div>
+
+<div id="scene-edit-modal" class="scene-edit-overlay hidden">
+  <div class="scene-edit-box">
+    <div class="scene-edit-title">
+      씬 편집
+      <span>최소 2개 · 최대 5개</span>
+    </div>
+    <div id="scene-edit-list" class="scene-edit-list"></div>
+    <button class="scene-add-btn" id="scene-add-btn" onclick="sceneAddItem()">+ 씬 추가</button>
+    <div class="scene-edit-footer">
+      <button onclick="sceneEditCancel()">취소</button>
+      <button class="btn-save" onclick="sceneEditSave()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const EXAMPLE_POOL = [
+  "키보드는 생각을 글로 옮기는 빠른 도구입니다. 타이핑 실력은 업무 효율을 크게 높여줍니다.",
+  "푸른 하늘 아래 바람이 살랑살랑 불어옵니다. 새들이 노래하며 봄날을 한껏 즐기고 있습니다.",
+  "디지털 마케팅은 검색 광고와 콘텐츠 제작으로 브랜드 인지도를 높이는 핵심 전략입니다.",
+  "집중력은 짧은 시간 안에 최고의 성과를 내는 핵심 능력입니다. 꾸준한 연습이 실력을 만듭니다.",
+  "가을 단풍이 붉게 물드는 산길을 걸으며 깊어가는 계절의 향기를 느꼈습니다.",
+  "좋은 습관은 하루아침에 만들어지지 않습니다. 작은 실천이 쌓여 큰 변화를 만들어냅니다.",
+  "스마트폰 사용 시간을 줄이고 독서 습관을 기르면 집중력과 사고력이 향상됩니다.",
+  "커피 한 잔의 여유와 함께 창밖의 빗소리를 들으며 오늘 하루를 차분히 돌아봅니다.",
+  "온라인 쇼핑은 편리하지만 충동구매를 조심해야 합니다. 필요한 것만 구매하는 습관이 중요합니다.",
+  "매일 아침 스트레칭을 하면 혈액순환이 좋아지고 하루를 활기차게 시작할 수 있습니다.",
+  "블로그 운영은 자신의 생각을 정리하고 다양한 사람들과 소통하는 좋은 방법입니다.",
+  "새로운 언어를 배우는 것은 뇌를 자극하고 다른 문화를 이해하는 데 큰 도움이 됩니다.",
+  "팀워크는 개인의 능력보다 더 큰 시너지를 만들어냅니다. 소통과 신뢰가 그 기반입니다.",
+  "여행은 새로운 시각을 열어주고 일상의 소중함을 다시 느끼게 해주는 특별한 경험입니다.",
+  "건강한 식습관과 꾸준한 운동은 몸과 마음을 모두 건강하게 유지하는 비결입니다.",
+  "창의적인 아이디어는 편안한 환경에서 더 잘 떠오릅니다. 억지로 생각하면 막히기 쉽습니다.",
+  "데이터 분석 능력은 현대 마케터에게 필수적인 역량입니다. 숫자 속에서 인사이트를 찾아야 합니다.",
+  "바람이 세게 부는 날에는 따뜻한 국물 요리가 생각납니다. 김이 모락모락 나는 순두부찌개 한 그릇이 딱입니다.",
+  "효율적인 시간 관리는 할 일 목록 작성에서 시작됩니다. 중요한 것부터 처리하는 습관을 들이세요.",
+  "글쓰기는 생각을 명확하게 만들어주는 도구입니다. 매일 짧게라도 쓰는 연습이 큰 차이를 만듭니다."
+];
+
+function pickExamples() {
+  const shuffled = [...EXAMPLE_POOL].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 3);
+}
+
+let EXAMPLES = pickExamples();
+
+let currentTheme = 'dark';
+
+function toggleTheme() {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  document.getElementById('opt-dark').className = 'toggle-option' + (currentTheme==='dark'?' active':'');
+  document.getElementById('opt-light').className = 'toggle-option' + (currentTheme==='light'?' active':'');
+  localStorage.setItem('kb-theme', currentTheme);
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem('kb-theme');
+  if (saved && saved !== 'dark') {
+    currentTheme = saved;
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    document.getElementById('opt-dark').className = 'toggle-option';
+    document.getElementById('opt-light').className = 'toggle-option active';
+  }
+})();
+
+let pressedKeys = new Map();
+let allDurations = [], allDelays = [];
+let totalCount = 0, maxSimul = 0, lastKeyTime = null;
+let dist = [0,0,0];
+let firstLog = true;
+let stageIdx = 0;
+let typingStartTime = null;
+let totalErrors = 0, totalChars = 0;
+let stageStartTime = null;
+let allStageWpm = [];
+
+const activeKeysEl = document.getElementById('active-keys');
+const logArea = document.getElementById('log-area');
+const typingInput = document.getElementById('typing-input');
+const exDisplay = document.getElementById('example-display');
+
+function renderStage() {
+  document.getElementById('typing-result').className = 'hidden result-box';
+  const text = EXAMPLES[stageIdx];
+  document.getElementById('stage-badge').textContent = (stageIdx+1) + ' / 3 단계';
+  exDisplay.innerHTML = text.split('').map((c,i) =>
+    '<span class="ch pending" id="c'+i+'">'+(c===' '?'&nbsp;':c)+'</span>'
+  ).join('');
+  typingInput.value = '';
+  typingInput.style.display = '';
+  stageStartTime = null;
+  // typingStartTime은 restartTyping에서만 초기화 (전체 시간 측정용)
+  updateProgress(0, text.length);
+  typingInput.focus();
+}
+
+function updateProgress(done, total) {
+  const pct = Math.round(done/total*100);
+  document.getElementById('prog-fill').style.width = pct+'%';
+  document.getElementById('prog-pct').textContent = pct+'%';
+  document.getElementById('prog-label').textContent = done + ' / ' + total + ' 자';
+}
+
+typingInput.addEventListener('input', () => {
+  const text = EXAMPLES[stageIdx];
+  const val = typingInput.value;
+  if (!stageStartTime && val.length > 0) stageStartTime = performance.now();
+  if (!typingStartTime && val.length > 0) typingStartTime = performance.now();
+  for (let i = 0; i < text.length; i++) {
+    const el = document.getElementById('c'+i);
+    if (!el) continue;
+    if (i < val.length) {
+      el.className = 'ch ' + (val[i]===text[i] ? 'correct' : 'wrong');
+    } else if (i === val.length) {
+      el.className = 'ch cursor pending';
+    } else {
+      el.className = 'ch pending';
+    }
+  }
+  updateProgress(val.length, text.length);
+  if (val.length >= text.length) {
+    const elapsed = (performance.now() - stageStartTime) / 1000;
+    // 한국어 타수 기준: 글자 수 / 경과시간(초) = 타/초
+    const wpm = Math.round(text.length / elapsed * 10) / 10;
+    allStageWpm.push(wpm);
+    let errs = 0;
+    for (let i=0; i<text.length; i++) if (val[i]!==text[i]) errs++;
+    totalErrors += errs;
+    totalChars += text.length;
+    if (stageIdx < 2) { stageIdx++; setTimeout(() => renderStage(), 400); }
+    else showResult();
+  }
+});
+
+// 한글 조합 중 여부 추적
+let isComposing = false;
+typingInput.addEventListener('compositionstart', () => { isComposing = true; });
+typingInput.addEventListener('compositionend', (e) => {
+  isComposing = false;
+  // 조합 완료된 글자를 현재 누른 키에 반영
+  const code = lastDownCode;
+  if (code && pressedKeys.has(code)) {
+    const data = pressedKeys.get(code);
+    const actualChar = e.data || data.label;
+    data.label = actualChar;
+    pressedKeys.set(code, data);
+    renderActiveKeys();
+  }
+});
+
+let lastDownCode = null;
+let prevVal = '';
+
+typingInput.addEventListener('keydown', (e) => {
+  lastDownCode = e.code;
+  // input 이벤트 전 이전 값 저장
+  prevVal = typingInput.value;
+  recordKey(e);
+});
+
+typingInput.addEventListener('keyup', (e) => {
+  // keyup 시점에 실제 입력된 글자로 label 업데이트
+  const code = e.code;
+  if (pressedKeys.has(code)) {
+    const data = pressedKeys.get(code);
+    const curVal = typingInput.value;
+    // 값이 늘었으면 새로 추가된 마지막 글자를 label로
+    if (!isComposing && curVal.length > prevVal.length) {
+      const newChar = curVal.slice(prevVal.length);
+      if (newChar && newChar !== ' ') data.label = newChar;
+      else if (newChar === ' ') data.label = 'Space';
+    }
+    pressedKeys.set(code, data);
+    renderActiveKeys();
+  }
+  releaseKey(e);
+});
+
+function showResult() {
+  typingInput.style.display = 'none';
+  document.getElementById('typing-result').className = 'result-box';
+  const totalTime = typingStartTime ? ((performance.now()-typingStartTime)/1000) : 0;
+  const avgWpm = allStageWpm.length ? (Math.round(allStageWpm.reduce((a,b)=>a+b,0)/allStageWpm.length * 10) / 10) : 0;
+  const acc = totalChars ? Math.round((1 - totalErrors/totalChars)*100) : 100;
+  const avgWpmMin = Math.round(avgWpm * 60);
+  document.getElementById('res-wpm').textContent = '초당 ' + avgWpm + ' 타';
+  document.getElementById('res-wpm-min').textContent = '분당 ' + avgWpmMin + ' 타';
+  document.getElementById('res-acc').innerHTML = acc + '<span class="metric-unit">%</span>';
+  document.getElementById('res-time').innerHTML = totalTime.toFixed(1) + '<span class="metric-unit">초</span>';
+  document.getElementById('res-err').innerHTML = totalErrors + '<span class="metric-unit">개</span>';
+}
+
+function restartTyping() {
+  // 타자 연습 초기화
+  stageIdx=0; typingStartTime=null; stageStartTime=null;
+  totalErrors=0; totalChars=0; allStageWpm=[];
+  EXAMPLES = pickExamples();
+  // 측정값 전체 초기화
+  pressedKeys.clear();
+  allDurations=[]; allDelays=[];
+  totalCount=0; maxSimul=0; lastKeyTime=null;
+  dist=[0,0,0]; firstLog=true;
+  ['m-speed','m-nkro','m-delay'].forEach(id => document.getElementById(id).innerHTML='—');
+  document.getElementById('m-count').innerHTML='0<span class="metric-unit">회</span>';
+  ['b0','b1','b2'].forEach(id => document.getElementById(id).style.width='0%');
+  ['d0','d1','d2'].forEach(id => document.getElementById(id).textContent='0%');
+  logArea.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0;">입력 기록이 여기에 표시됩니다</div>';
+  activeKeysEl.innerHTML='<span style="font-size:13px;color:var(--text3)">없음</span>';
+  renderStage();
+}
+
+function skipStage() {
+  // 예제만 교체, 단계 카운트 유지 (stageIdx 변경 없음)
+  // 현재 단계의 예제를 풀에서 새로운 문장으로 교체
+  const remaining = EXAMPLE_POOL.filter(e => !EXAMPLES.includes(e));
+  if (remaining.length > 0) {
+    const picked = remaining[Math.floor(Math.random() * remaining.length)];
+    EXAMPLES[stageIdx] = picked;
+  }
+  stageStartTime = null;
+  renderStage();
+}
+
+function getKeyLabel(e) {
+  if (e.code==='Space' || e.key===' ') return 'Space';
+  if (e.key==='Process' || e.key==='Unidentified') return '…'; // 한글 조합 중 임시 표시
+  if (e.key.length===1) return e.key;
+  return e.key;
+}
+
+function recordKey(e) {
+  const now = performance.now();
+  const label = getKeyLabel(e);
+  if (!pressedKeys.has(e.code)) {
+    pressedKeys.set(e.code, { label, downTime: now });
+    const delay = lastKeyTime !== null ? now - lastKeyTime : 0;
+    lastKeyTime = now;
+    if (pressedKeys.size > maxSimul) {
+      maxSimul = pressedKeys.size;
+      document.getElementById('m-nkro').innerHTML = maxSimul + '<span class="metric-unit">키</span>';
+    }
+    totalCount++;
+    document.getElementById('m-count').innerHTML = totalCount + '<span class="metric-unit">회</span>';
+    if (totalCount > 1) {
+      allDelays.push(delay);
+      const avgD = allDelays.reduce((a,b)=>a+b,0)/allDelays.length;
+      document.getElementById('m-delay').innerHTML = avgD.toFixed(1) + '<span class="metric-unit">ms</span>';
+    }
+    renderActiveKeys();
+  }
+}
+
+function releaseKey(e) {
+  const now = performance.now();
+  const data = pressedKeys.get(e.code);
+  if (!data) return;
+  const dur = now - data.downTime;
+  allDurations.push(dur);
+  const avg = allDurations.reduce((a,b)=>a+b,0)/allDurations.length;
+  document.getElementById('m-speed').innerHTML = avg.toFixed(1) + '<span class="metric-unit">ms</span>';
+  if (dur<20) dist[0]++; else if (dur<50) dist[1]++; else dist[2]++;
+  updateDist();
+  // 로그에는 최종 확정된 label 사용 (한글이면 실제 글자)
+  addLog(data.label, dur);
+  pressedKeys.delete(e.code);
+  renderActiveKeys();
+}
+
+function renderActiveKeys() {
+  if (pressedKeys.size===0) {
+    activeKeysEl.innerHTML='<span style="font-size:13px;color:var(--text3)">없음</span>';
+    return;
+  }
+  activeKeysEl.innerHTML='';
+  pressedKeys.forEach(v => {
+    const b=document.createElement('span');
+    b.className='key-badge'; b.textContent=v.label;
+    activeKeysEl.appendChild(b);
+  });
+}
+
+function addLog(key, dur) {
+  if (firstLog) { logArea.innerHTML=''; firstLog=false; }
+  const ts = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const grade = dur<80?'빠름':dur<150?'보통':'느림';
+  const gradeColor = dur<80?'var(--green)':dur<150?'var(--orange)':'var(--red)';
+  const row = document.createElement('div');
+  row.className='log-row';
+  row.innerHTML='<span class="log-time">'+ts+'</span><span class="log-key">'+key+'</span><span class="log-dur">'+dur.toFixed(1)+'ms</span><span class="log-grade" style="color:'+gradeColor+'">'+grade+'</span>';
+  logArea.insertBefore(row, logArea.firstChild);
+  if (logArea.children.length > 50) logArea.removeChild(logArea.lastChild);
+}
+
+function updateDist() {
+  const total = dist[0]+dist[1]+dist[2];
+  if (!total) return;
+  ['b0','b1','b2'].forEach((id,i) => {
+    const pct = Math.round(dist[i]/total*100);
+    document.getElementById(id).style.width=pct+'%';
+    document.getElementById('d'+i).textContent=pct+'%';
+  });
+}
+
+function exportData() {
+  const avg = allDurations.length?(allDurations.reduce((a,b)=>a+b,0)/allDurations.length).toFixed(1):'—';
+  const avgD = allDelays.length?(allDelays.reduce((a,b)=>a+b,0)/allDelays.length).toFixed(1):'—';
+  const total = dist[0]+dist[1]+dist[2];
+  const wpm = allStageWpm.length?Math.round(allStageWpm.reduce((a,b)=>a+b,0)/allStageWpm.length):'—';
+  const txt='[키보드 성능 측정 결과]\n평균 입력 속도: '+avg+'ms\n최대 동시 입력: '+maxSimul+'키\n평균 지연 시간: '+avgD+'ms\n총 입력 횟수: '+totalCount+'회\n반응도: 빠름 '+(total?Math.round(dist[0]/total*100):0)+'% / 보통 '+(total?Math.round(dist[1]/total*100):0)+'% / 느림 '+(total?Math.round(dist[2]/total*100):0)+'%\n타자 연습 평균 타속: '+wpm+'타/초';
+  navigator.clipboard.writeText(txt).then(()=>alert('클립보드에 복사되었습니다!')).catch(()=>alert(txt));
+}
+
+
+// ── 쇼츠 모드 ──
+let shortsStageIdx = 0;
+let shortsExamples = [];
+let shortsStageStartTime = null;
+let shortsTypingStartTime = null;
+let shortsIsComposing = false;
+let shortsPrevVal = '';
+let currentScene = 0;
+// ── 씬 레이블 (localStorage 유지) ──
+let sceneLabels = JSON.parse(localStorage.getItem('kb-scenes') || '["책상","담요","매트"]');
+
+function saveSceneLabels() {
+  localStorage.setItem('kb-scenes', JSON.stringify(sceneLabels));
+}
+
+function renderShortsSceneChips() {
+  currentScene = Math.min(currentScene, sceneLabels.length - 1);
+  document.getElementById('shorts-scene-row').innerHTML =
+    sceneLabels.map((label, i) =>
+      `<div class="scene-chip ${i===currentScene?'active':''}" id="scene-${i}" onclick="selectScene(${i})">
+        <span class="scene-dot"></span> ${label}
+      </div>`
+    ).join('') +
+    `<button class="scene-edit-btn" onclick="openSceneEdit()" title="씬 편집">✏</button>`;
+  document.getElementById('shorts-scene-label').textContent = sceneLabels[currentScene];
+}
+
+function renderKtSceneChips() {
+  ktScene = Math.min(ktScene, sceneLabels.length - 1);
+  document.getElementById('kt-scene-row').innerHTML =
+    sceneLabels.map((label, i) =>
+      `<div class="scene-chip ${i===ktScene?'active':''}" id="kt-scene-${i}" onclick="ktSelectScene(${i})">
+        <span class="scene-dot"></span> ${label}
+      </div>`
+    ).join('') +
+    `<button class="scene-edit-btn" onclick="openSceneEdit()" title="씬 편집">✏</button>`;
+}
+
+// ── 씬 편집 모달 ──
+let _sceneTemp = [];
+
+function openSceneEdit() {
+  _sceneTemp = [...sceneLabels];
+  _renderSceneEditList();
+  document.getElementById('scene-edit-modal').classList.remove('hidden');
+}
+
+function _renderSceneEditList() {
+  document.getElementById('scene-edit-list').innerHTML = _sceneTemp.map((label, i) =>
+    `<div class="scene-edit-item">
+      <input type="text" value="${label.replace(/"/g,'&quot;')}" maxlength="12"
+             oninput="_sceneTemp[${i}]=this.value" placeholder="씬 이름" />
+      <button class="scene-del-btn" onclick="sceneRemoveItem(${i})"
+              ${_sceneTemp.length <= 2 ? 'disabled' : ''} title="삭제">✕</button>
+    </div>`
+  ).join('');
+  document.getElementById('scene-add-btn').disabled = _sceneTemp.length >= 5;
+}
+
+function sceneAddItem() {
+  if (_sceneTemp.length >= 5) return;
+  _sceneTemp.push('새 씬');
+  _renderSceneEditList();
+}
+
+function sceneRemoveItem(i) {
+  if (_sceneTemp.length <= 2) return;
+  _sceneTemp.splice(i, 1);
+  _renderSceneEditList();
+}
+
+function sceneEditSave() {
+  document.querySelectorAll('#scene-edit-list input').forEach((el, i) => { _sceneTemp[i] = el.value; });
+  sceneLabels = _sceneTemp.map(s => s.trim()).filter(s => s);
+  if (sceneLabels.length < 2) sceneLabels.push(...['씬 1','씬 2'].slice(sceneLabels.length));
+  if (sceneLabels.length > 5) sceneLabels = sceneLabels.slice(0, 5);
+  saveSceneLabels();
+  renderShortsSceneChips();
+  renderKtSceneChips();
+  document.getElementById('scene-edit-modal').classList.add('hidden');
+}
+
+function sceneEditCancel() {
+  document.getElementById('scene-edit-modal').classList.add('hidden');
+}
+
+function enterShorts() {
+  try { window.resizeTo(720, 1280); } catch(e) {}
+  document.body.classList.add('shorts-mode');
+  renderShortsSceneChips();
+  shortsExamples = pickExamples();
+  shortsStageIdx = 0;
+  renderShortsStage();
+}
+
+function exitShorts() {
+  document.body.classList.remove('shorts-mode');
+}
+
+function selectScene(idx) {
+  currentScene = idx;
+  sceneLabels.forEach((_, i) => {
+    const el = document.getElementById('scene-'+i);
+    if (el) el.className = 'scene-chip' + (i===idx?' active':'');
+  });
+  document.getElementById('shorts-scene-label').textContent = sceneLabels[idx];
+}
+
+function renderShortsStage() {
+  const text = shortsExamples[shortsStageIdx];
+  document.getElementById('s-stage-badge').textContent = (shortsStageIdx+1) + ' / 3 단계';
+  document.getElementById('s-example-display').innerHTML = text.split('').map((c,i) =>
+    '<span class="ch pending" id="sc'+i+'">'+(c===' '?'&nbsp;':c)+'</span>'
+  ).join('');
+  const si = document.getElementById('shorts-input');
+  si.value = '';
+  si.style.display = '';
+  shortsStageStartTime = null;
+  document.getElementById('s-prog-fill').style.width = '0%';
+  si.focus();
+}
+
+function shortsRestart() {
+  shortsStageIdx = 0;
+  shortsTypingStartTime = null;
+  shortsStageStartTime = null;
+  shortsExamples = pickExamples();
+  renderShortsStage();
+}
+
+function shortsSkip() {
+  const remaining = EXAMPLE_POOL.filter(e => !shortsExamples.includes(e));
+  if (remaining.length > 0) {
+    const picked = remaining[Math.floor(Math.random() * remaining.length)];
+    shortsExamples[shortsStageIdx] = picked;
+  }
+  shortsStageStartTime = null;
+  renderShortsStage();
+}
+
+const shortsInput = document.getElementById('shorts-input');
+
+shortsInput.addEventListener('compositionstart', () => { shortsIsComposing = true; });
+shortsInput.addEventListener('compositionend', () => { shortsIsComposing = false; });
+
+shortsInput.addEventListener('input', () => {
+  const text = shortsExamples[shortsStageIdx];
+  const val = shortsInput.value;
+  if (!shortsStageStartTime && val.length > 0) shortsStageStartTime = performance.now();
+  if (!shortsTypingStartTime && val.length > 0) shortsTypingStartTime = performance.now();
+
+  for (let i = 0; i < text.length; i++) {
+    const el = document.getElementById('sc'+i);
+    if (!el) continue;
+    if (i < val.length) {
+      el.className = 'ch ' + (val[i]===text[i] ? 'correct' : 'wrong');
+    } else if (i === val.length) {
+      el.className = 'ch cursor pending';
+    } else {
+      el.className = 'ch pending';
+    }
+  }
+  const pct = Math.round(val.length / text.length * 100);
+  document.getElementById('s-prog-fill').style.width = Math.min(pct,100) + '%';
+
+  if (val.length >= text.length) {
+    if (shortsStageIdx < 2) {
+      shortsStageIdx++;
+      setTimeout(() => renderShortsStage(), 400);
+    } else {
+      shortsInput.value = '';
+      shortsInput.placeholder = '✅ 완료! 다시 시작을 누르세요';
+      document.getElementById('s-prog-fill').style.width = '100%';
+    }
+  }
+});
+
+
+
+
+function confirmInfo() {
+  const kb = document.getElementById('info-keyboard').value.trim() || '—';
+  const sw = document.getElementById('info-switch').value.trim() || '—';
+  const ev = document.getElementById('info-env').value.trim() || '—';
+  document.getElementById('disp-keyboard').textContent = kb;
+  document.getElementById('disp-switch').textContent = sw;
+  document.getElementById('disp-env').textContent = ev;
+  document.getElementById('shorts-info-form').classList.add('hidden');
+  document.getElementById('shorts-info-display').classList.remove('hidden');
+}
+
+function editInfo() {
+  document.getElementById('shorts-info-form').classList.remove('hidden');
+  document.getElementById('shorts-info-display').classList.add('hidden');
+}
+
+
+function setRatio(ratio, btn) {
+  document.getElementById('shorts-video-wrap').style.aspectRatio = ratio;
+  const label = ratio === '16/9' ? '16:9 (1080p) 기준' : '4:3 기준';
+  document.getElementById('ratio-label').textContent = label;
+  // 버튼 스타일 토글
+  ['ratio-169','ratio-43'].forEach(id => {
+    const b = document.getElementById(id);
+    b.style.background = 'none';
+    b.style.color = 'var(--text3)';
+    b.style.borderColor = 'var(--border2)';
+  });
+  btn.style.background = 'var(--accent)';
+  btn.style.color = '#fff';
+  btn.style.borderColor = 'var(--accent)';
+}
+
+// ── 타이핑 효과음 ──
+let audioCtx = null;
+let soundEnabled = true;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTypeSound() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+
+    // 클릭 노이즈 (짧은 화이트 노이즈 버스트)
+    const bufLen = Math.floor(ctx.sampleRate * 0.025);
+    const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 4);
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+
+    const bandpass = ctx.createBiquadFilter();
+    bandpass.type = 'bandpass';
+    bandpass.frequency.value = 1200;
+    bandpass.Q.value = 0.8;
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.18, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+
+    noise.connect(bandpass);
+    bandpass.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start(now);
+
+    // 저음 "탁" 성분
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(60, now + 0.04);
+
+    const oscGain = ctx.createGain();
+    oscGain.gain.setValueAtTime(0.12, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+    osc.connect(oscGain);
+    oscGain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.04);
+  } catch(e) {}
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  const btn = document.getElementById('sound-btn');
+  if (btn) btn.textContent = soundEnabled ? '🔊 효과음 ON' : '🔇 효과음 OFF';
+}
+
+// 타이핑 입력 시 효과음 트리거
+typingInput.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  if (['Shift','Control','Alt','Meta','CapsLock','Tab'].includes(e.key)) return;
+  playTypeSound();
+});
+
+shortsInput.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  if (['Shift','Control','Alt','Meta','CapsLock','Tab'].includes(e.key)) return;
+  playTypeSound();
+});
+
+renderStage();
+
+// ── 키 테스트 모드 ──
+let keytestActive = false;
+let ktScene = 0;
+let ktKeyCount = {};
+
+function enterKeyTest() {
+  try { window.resizeTo(720, 1280); } catch(e) {}
+  document.body.classList.add('keytest-mode');
+  keytestActive = true;
+  ktKeyCount = {};
+  renderKtSceneChips();
+  document.getElementById('kt-cap').className = 'kt-cap idle';
+  document.getElementById('kt-char').textContent = '?';
+  document.getElementById('kt-char').className = 'kt-char';
+  document.getElementById('kt-row-tag').style.display = 'none';
+  document.getElementById('kt-hand-tag').style.display = 'none';
+  document.getElementById('kt-hint').textContent = '키를 눌러보세요';
+}
+
+function exitKeyTest() {
+  document.body.classList.remove('keytest-mode');
+  keytestActive = false;
+}
+
+function ktSelectScene(idx) {
+  ktScene = idx;
+  sceneLabels.forEach((_, i) => {
+    const el = document.getElementById('kt-scene-'+i);
+    if (el) el.className = 'scene-chip' + (i===idx?' active':'');
+  });
+}
+
+function ktSetRatio(ratio, btn) {
+  document.getElementById('kt-video-wrap').style.aspectRatio = ratio;
+  document.getElementById('kt-ratio-label').textContent = ratio === '16/9' ? '16:9 (1080p) 기준' : '4:3 기준';
+  ['kt-ratio-169','kt-ratio-43'].forEach(id => {
+    const b = document.getElementById(id);
+    b.style.background = 'none'; b.style.color = 'var(--text3)'; b.style.borderColor = 'var(--border2)';
+  });
+  btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--accent)';
+}
+
+function ktConfirmInfo() {
+  const kb = document.getElementById('kt-info-keyboard').value.trim() || '—';
+  const sw = document.getElementById('kt-info-switch').value.trim() || '—';
+  const ev = document.getElementById('kt-info-env').value.trim() || '—';
+  document.getElementById('kt-disp-keyboard').textContent = kb;
+  document.getElementById('kt-disp-switch').textContent = sw;
+  document.getElementById('kt-disp-env').textContent = ev;
+  document.getElementById('kt-info-form').classList.add('hidden');
+  document.getElementById('kt-info-display').classList.remove('hidden');
+}
+
+function ktEditInfo() {
+  document.getElementById('kt-info-form').classList.remove('hidden');
+  document.getElementById('kt-info-display').classList.add('hidden');
+}
+
+function ktGetDisplay(e) {
+  const code = e.code, key = e.key;
+  const charMap = {
+    ' ':'SPACE', 'Enter':'↵', 'Backspace':'⌫', 'Tab':'⇥',
+    'Escape':'ESC', 'Delete':'DEL', 'Insert':'INS',
+    'Home':'Home', 'End':'End', 'PageUp':'PgUp', 'PageDown':'PgDn',
+    'ArrowUp':'↑', 'ArrowDown':'↓', 'ArrowLeft':'←', 'ArrowRight':'→',
+    'Shift':'⇧', 'Control':'Ctrl', 'Alt':'Alt', 'Meta':'⌘', 'CapsLock':'⇪',
+    'PrintScreen':'PrtSc', 'ScrollLock':'ScrLk', 'Pause':'Pause',
+    'NumLock':'NumLk', 'ContextMenu':'Menu',
+    'HangulMode':'한/영', 'Hanja':'한자', 'Lang1':'한/영', 'Lang2':'한자',
+    'KanaMode':'かな', 'Convert':'変換', 'NonConvert':'無変',
+    'MediaPlayPause':'⏯', 'MediaStop':'⏹', 'MediaTrackNext':'⏭', 'MediaTrackPrevious':'⏮',
+    'AudioVolumeMute':'🔇', 'AudioVolumeUp':'🔊', 'AudioVolumeDown':'🔉',
+  };
+  const labelMap = {
+    'Space':'스페이스', 'Enter':'Enter', 'Backspace':'Backspace', 'Tab':'Tab',
+    'Escape':'Escape', 'Delete':'Delete', 'Insert':'Insert', 'CapsLock':'CapsLock',
+    'ShiftLeft':'Shift (왼)', 'ShiftRight':'Shift (오른)',
+    'ControlLeft':'Ctrl (왼)', 'ControlRight':'Ctrl (오른)',
+    'AltLeft':'Alt (왼)', 'AltRight':'Alt (오른)',
+    'MetaLeft':'Win (왼)', 'MetaRight':'Win (오른)',
+    'ArrowUp':'↑ 위', 'ArrowDown':'↓ 아래', 'ArrowLeft':'← 왼쪽', 'ArrowRight':'→ 오른쪽',
+    'PrintScreen':'Print Screen', 'ScrollLock':'Scroll Lock', 'Pause':'Pause',
+    'NumLock':'Num Lock', 'NumpadEnter':'Num Enter', 'NumpadDecimal':'Num .',
+    'NumpadDivide':'Num /', 'NumpadMultiply':'Num *', 'NumpadSubtract':'Num -', 'NumpadAdd':'Num +',
+    'Lang1':'한/영', 'Lang2':'한자', 'IntlBackslash':'\\', 'IntlRo':'\\', 'IntlYen':'¥',
+    'ContextMenu':'메뉴 키',
+  };
+  let char;
+  if (key.length === 1)                              char = key === ' ' ? 'SPACE' : key.toUpperCase();
+  else if (charMap[key])                             char = charMap[key];
+  else if (charMap[code])                            char = charMap[code];
+  else if (code.startsWith('Key'))                   char = code.slice(3);
+  else if (code.startsWith('Digit'))                 char = code.slice(5);
+  else if (code.startsWith('Numpad') && /\d$/.test(code)) char = code.slice(-1);
+  else if (/^F\d+$/.test(code))                     char = code;
+  else                                               char = (key || code).slice(0, 5).toUpperCase();
+
+  const label = labelMap[code] || (key.length === 1 ? (key === ' ' ? '스페이스' : key.toUpperCase()) : key);
+  const sizeClass = char.length >= 5 ? 'sm' : char.length >= 3 ? 'md' : '';
+  return { char, label, sizeClass };
+}
+
+function ktGetRow(code) {
+  if (['Escape','PrintScreen','ScrollLock','Pause'].includes(code) || /^F\d+$/.test(code)) return 'R4';
+  if (['Backquote','Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal','Backspace'].includes(code)) return 'R4';
+  if (['Tab','KeyQ','KeyW','KeyE','KeyR','KeyT','KeyY','KeyU','KeyI','KeyO','KeyP','BracketLeft','BracketRight','Backslash','IntlBackslash'].includes(code)) return 'R3';
+  if (['CapsLock','KeyA','KeyS','KeyD','KeyF','KeyG','KeyH','KeyJ','KeyK','KeyL','Semicolon','Quote','Enter'].includes(code)) return 'R2';
+  if (['ShiftLeft','KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM','Comma','Period','Slash','ShiftRight','IntlRo'].includes(code)) return 'R1';
+  if (['Space','ControlLeft','ControlRight','AltLeft','AltRight','MetaLeft','MetaRight','Fn','ContextMenu','Lang1','Lang2','IntlYen'].includes(code)) return 'R1';
+  if (['Insert','Home','PageUp','Delete','End','PageDown'].includes(code)) return '탐색 키';
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(code)) return '방향키';
+  if (code === 'NumLock' || code.startsWith('Numpad')) return '숫자 패드';
+  if (['KanaMode','Convert','NonConvert','HangulMode','Hanja','Lang3','Lang4','Lang5'].includes(code)) return '특수 키';
+  return '기타 키';
+}
+
+function ktGetHand(code) {
+  const L = new Set([
+    'Backquote','Digit1','Digit2','Digit3','Digit4','Digit5',
+    'Tab','KeyQ','KeyW','KeyE','KeyR','KeyT',
+    'CapsLock','KeyA','KeyS','KeyD','KeyF','KeyG',
+    'ShiftLeft','KeyZ','KeyX','KeyC','KeyV','KeyB',
+    'ControlLeft','AltLeft','MetaLeft','IntlBackslash',
+  ]);
+  const R = new Set([
+    'Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal','Backspace',
+    'KeyY','KeyU','KeyI','KeyO','KeyP','BracketLeft','BracketRight','Backslash',
+    'KeyH','KeyJ','KeyK','KeyL','Semicolon','Quote','Enter',
+    'KeyN','KeyM','Comma','Period','Slash','ShiftRight','IntlRo',
+    'ControlRight','AltRight','MetaRight','ContextMenu',
+    'PrintScreen','ScrollLock','Pause',
+    'Insert','Home','PageUp','Delete','End','PageDown',
+    'ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+  ]);
+  if (L.has(code)) return '왼손';
+  if (R.has(code)) return '오른손';
+  if (code === 'Space') return '양 엄지';
+  if (code === 'NumLock' || code.startsWith('Numpad')) return '오른손';
+  if (['Lang1','Lang2','Lang3','KanaMode','Convert','NonConvert','HangulMode','Hanja'].includes(code)) return '오른손';
+  return '';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (!keytestActive) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  e.preventDefault();
+  if (e.repeat) return;
+
+  const { char, label, sizeClass } = ktGetDisplay(e);
+  const row  = ktGetRow(e.code);
+  const hand = ktGetHand(e.code);
+  ktKeyCount[e.code] = (ktKeyCount[e.code] || 0) + 1;
+
+  const cap    = document.getElementById('kt-cap');
+  const charEl = document.getElementById('kt-char');
+  charEl.textContent = char;
+  charEl.className   = 'kt-char' + (sizeClass ? ' '+sizeClass : '');
+  cap.className = 'kt-cap';
+  void cap.offsetWidth; // reflow for re-animation
+  cap.classList.add('pressed');
+
+  const rowTag  = document.getElementById('kt-row-tag');
+  const handTag = document.getElementById('kt-hand-tag');
+  rowTag.textContent  = row;  rowTag.style.display  = row  ? '' : 'none';
+  handTag.textContent = hand; handTag.style.display = hand ? '' : 'none';
+
+  document.getElementById('kt-hint').textContent = label + '  ·  ' + ktKeyCount[e.code] + '회';
+
+  playTypeSound();
+});
+
+document.addEventListener('keyup', (e) => {
+  if (!keytestActive) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  document.getElementById('kt-cap').classList.remove('pressed');
+});
+</script>
+</body>
+</html>
